@@ -1,0 +1,126 @@
+{
+  "items": [
+    {
+      "name": "碗筷",
+      "price": 56,
+      "actualPrice": 0,
+      "category": "food",
+      "priority": "high",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "厨房调味套装",
+      "price": 35,
+      "actualPrice": 0,
+      "category": "food",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "饭盒",
+      "price": 25,
+      "actualPrice": 0,
+      "category": "food",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "厨房清洗套装",
+      "price": 50,
+      "actualPrice": 0,
+      "category": "food",
+      "priority": "high",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "厨余垃圾桶",
+      "price": 20,
+      "actualPrice": 0,
+      "category": "food",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "锅铲",
+      "price": 20,
+      "actualPrice": 0,
+      "category": "food",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "空气炸锅",
+      "price": 60,
+      "actualPrice": 0,
+      "category": "food",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "家用清理工具",
+      "price": 40,
+      "actualPrice": 0,
+      "category": "other",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "洗护",
+      "price": 120,
+      "actualPrice": 0,
+      "category": "other",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "搬家费",
+      "price": 260,
+      "actualPrice": 0,
+      "category": "other",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "剑麻地毯",
+      "price": 120,
+      "actualPrice": 0,
+      "category": "other",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    },
+    {
+      "name": "沙发盖毯",
+      "price": 60,
+      "actualPrice": 0,
+      "category": "other",
+      "priority": "medium",
+      "completed": false,
+      "note": "",
+      "noteExpanded": false
+    }
+  ],
+  "notes": "",
+  "exportDate": "2026-01-30T04:01:12.794Z"
+}

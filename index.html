@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予算表</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'MS PMincho', 'SimSun', serif;
+            background: #f5f5f5;
+            color: #1a1a1a;
+            line-height: 1.8;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            letter-spacing: 0.8em;
+            color: #1a1a1a;
+            font-weight: normal;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 6px 10px;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+
+        .menu-btn:hover { opacity: 1; }
+
+        .menu-icon {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .menu-icon span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: #1a1a1a;
+            border-radius: 1px;
+        }
+
+        /* AI Status Panel */
+        .ai-status {
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            padding: 12px 16px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .ai-status.show { display: block; }
+
+        .ai-status-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-dot.online { background: #4a9e4a; }
+        .status-dot.offline { background: #b85c5c; }
+        .status-dot.working { background: #4a7ab8; animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .ai-status-text {
+            font-size: 0.75rem;
+            color: #666;
+        }
+
+        .ai-progress {
+            font-size: 0.8rem;
+            color: #1a1a1a;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+            background: #fafafa;
+            padding: 10px;
+            border-radius: 2px;
+        }
+
+        .ai-progress.error {
+            color: #b85c5c;
+        }
+
+        /* Status Tabs */
+        .status-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .status-tab {
+            padding: 8px 20px;
+            border: 1px solid #ccc;
+            background: transparent;
+            color: #666;
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.15em;
+        }
+
+        .status-tab:hover { background: #e8e8e8; }
+
+        .status-tab.active {
+            background: #1a1a1a;
+            color: #fff;
+            border-color: #1a1a1a;
+        }
+
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .category-tab {
+            padding: 6px 14px;
+            border: 1px solid #ddd;
+            background: transparent;
+            color: #888;
+            font-family: inherit;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.1em;
+        }
+
+        .category-tab:hover { background: #e8e8e8; }
+
+        .category-tab.active {
+            background: #666;
+            color: #fff;
+            border-color: #666;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 0.75rem;
+        }
+
+        .pagination button {
+            padding: 4px 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+        }
+
+        .pagination button:hover:not(:disabled) { background: #f0f0f0; }
+        .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+        .pagination span { color: #666; }
+
+        /* Budget Table */
+        .budget-table {
+            background: #fff;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f0f0f0;
+        }
+
+        th {
+            padding: 12px 14px;
+            text-align: left;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            color: #666;
+            font-weight: normal;
+            border-bottom: 1px solid #ddd;
+        }
+
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.8rem;
+            vertical-align: middle;
+        }
+
+        .price-cell {
+            text-align: right;
+            font-family: 'Georgia', serif;
+            color: #333;
+        }
+
+        .price-cell .diff {
+            font-size: 0.65em;
+            margin-left: 6px;
+        }
+
+        .price-cell .diff.positive { color: #2d7a3e; }
+        .price-cell .diff.negative { color: #b85c5c; }
+
+        .completed td {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .checkbox-cell {
+            width: 36px;
+            text-align: center;
+        }
+
+        .item-checkbox {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #1a1a1a;
+        }
+
+        .priority-dot {
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .priority-high { background: #1a1a1a; }
+        .priority-medium { background: #888; }
+        .priority-low { background: #ccc; }
+
+        .cat-tag {
+            color: #aaa;
+            font-size: 0.7em;
+            margin-left: 6px;
+        }
+
+        .item-row {
+            cursor: pointer;
+        }
+
+        .item-row:hover { background: #fafafa; }
+
+        .action-cell {
+            width: 70px;
+            text-align: right;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #bbb;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 2px 6px;
+            transition: color 0.2s;
+        }
+
+        .action-btn:hover { color: #666; }
+
+        /* Footer */
+        tfoot {
+            background: #f8f8f8;
+            border-top: 2px solid #1a1a1a;
+        }
+
+        tfoot td {
+            padding: 16px 14px;
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+            color: #1a1a1a;
+        }
+
+        tfoot .total-price {
+            font-family: 'Georgia', serif;
+            font-size: 1.1rem;
+            color: #1a1a1a;
+        }
+
+        /* Add Form */
+        .add-form {
+            background: #fff;
+            padding: 16px;
+            margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            border: 1px solid #e8e8e8;
+        }
+
+        .add-form input, .add-form select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            font-family: inherit;
+            font-size: 0.8rem;
+            border-radius: 1px;
+            outline: none;
+        }
+
+        .add-form input:focus { border-color: #666; }
+
+        .add-form input[type="text"] { flex: 1; min-width: 100px; }
+        .add-form input[type="number"] { width: 80px; }
+        .add-form select { padding: 8px 10px; }
+
+        .add-btn, .ai-btn {
+            padding: 8px 18px;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            border-radius: 1px;
+            transition: background 0.3s;
+        }
+
+        .add-btn:hover, .ai-btn:hover { background: #333; }
+
+        .ai-btn {
+            background: #666;
+            position: relative;
+        }
+
+        .ai-btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .ai-btn.loading::after {
+            content: '';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        /* Notes Section */
+        .notes-section {
+            margin-top: 20px;
+            background: #fff;
+            padding: 16px;
+            border: 1px solid #e8e8e8;
+        }
+
+        .notes-title {
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            color: #333;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .notes-input {
+            width: 100%;
+            min-height: 70px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            font-family: inherit;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            resize: vertical;
+            border-radius: 1px;
+            outline: none;
+        }
+
+        .notes-input:focus { border-color: #666; }
+
+        /* Export Section */
+        .export-section {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .export-btn {
+            padding: 8px 24px;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            font-family: inherit;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            border-radius: 1px;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover { background: #333; }
+
+        .export-btn.secondary {
+            background: #fff;
+            color: #333;
+            border: 1px solid #ccc;
+        }
+
+        .export-btn.secondary:hover { background: #f8f8f8; }
+
+        /* Menu Dropdown */
+        .menu-dropdown {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+            min-width: 160px;
+        }
+
+        .menu-dropdown.show { display: block; }
+
+        .menu-item {
+            padding: 12px 18px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .menu-item:last-child { border-bottom: none; }
+        .menu-item:hover { background: #fafafa; }
+
+        .menu-item.danger { color: #b85c5c; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
+            color: #999;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .modal-title {
+            font-weight: normal;
+            letter-spacing: 0.15em;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .receipt-preview {
+            margin: 15px 0;
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #eee;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .receipt-preview img {
+            margin-bottom: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 8px 20px;
+            font-family: inherit;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 1px;
+        }
+
+        .modal-btn.primary { background: #1a1a1a; color: #fff; }
+        .modal-btn.secondary { background: #e8e8e8; color: #333; }
+
+        /* Edit Modal */
+        .edit-form {
+            text-align: left;
+        }
+
+        .edit-form label {
+            display: block;
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .edit-form input, .edit-form select, .edit-form textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            background: #fafafa;
+            font-family: inherit;
+            font-size: 0.8rem;
+            border-radius: 1px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        .edit-form input:focus { border-color: #666; }
+
+        .edit-form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .edit-form-row > * { flex: 1; }
+
+        /* Hidden file input */
+        #fileInput { display: none; }
+
+        #receiptCanvas { display: none; }
+
+        .page-indicator {
+            font-size: 0.7rem;
+            color: #999;
+            text-align: center;
+            padding: 10px;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 20px 15px; }
+            h1 { font-size: 1.1rem; letter-spacing: 0.5em; }
+            .add-form { flex-direction: column; align-items: stretch; }
+            .add-form input[type="number"] { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>予算表</h1>
+            <button class="menu-btn" onclick="toggleMenu()">
+                <div class="menu-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </button>
+        </div>
+
+        <!-- Menu Dropdown -->
+        <div class="menu-dropdown" id="menuDropdown">
+            <div class="menu-item" onclick="exportData()">导出备份</div>
+            <div class="menu-item" onclick="document.getElementById('fileInput').click()">导入备份</div>
+            <div class="menu-item danger" onclick="clearAllData()">清空数据</div>
+        </div>
+
+        <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+
+        <!-- AI Status Panel -->
+        <div class="ai-status" id="aiStatus">
+            <div class="ai-status-header">
+                <div class="status-dot" id="statusDot"></div>
+                <span class="ai-status-text" id="statusText">等待操作...</span>
+            </div>
+            <div class="ai-progress" id="aiProgress"></div>
+        </div>
+
+        <!-- Status Tabs -->
+        <div class="status-tabs" id="statusTabs">
+            <button class="status-tab active" data-status="pending">待购</button>
+            <button class="status-tab" data-status="completed">已购</button>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="category-tabs" id="categoryTabs">
+            <button class="category-tab active" data-category="all">全部</button>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="display:none;">
+            <button onclick="prevPage()" id="prevBtn">上一页</button>
+            <span id="pageInfo">1 / 1</span>
+            <button onclick="nextPage()" id="nextBtn">下一页</button>
+        </div>
+
+        <div class="budget-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell"></th>
+                        <th>项目</th>
+                        <th>金额</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="budgetBody">
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2">合计</td>
+                        <td class="total-price" id="totalAmount">¥0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="add-form">
+            <input type="text" id="itemName" placeholder="项目名">
+            <input type="number" id="itemPrice" placeholder="预算">
+            <input type="number" id="itemActual" placeholder="实际">
+            <select id="itemCategory">
+                <option value="new">+ 新建分类</option>
+            </select>
+            <select id="itemPriority">
+                <option value="high">高</option>
+                <option value="medium" selected>中</option>
+                <option value="low">低</option>
+            </select>
+            <button class="add-btn" onclick="addItem()">添加</button>
+        </div>
+
+        <div class="notes-section">
+            <div class="notes-title">备忘</div>
+            <textarea class="notes-input" id="notes" placeholder="备注..."></textarea>
+        </div>
+
+        <div class="export-section">
+            <button class="export-btn secondary" onclick="openAIOrganize()">AI整理</button>
+            <button class="export-btn" onclick="generateReceipt()">小票を出力</button>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal-overlay" id="receiptModal">
+        <div class="modal-content">
+            <h3 class="modal-title">小票预览</h3>
+            <div class="receipt-preview" id="receiptPreview"></div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeModal('receiptModal')">关闭</button>
+                <button class="modal-btn primary" onclick="downloadReceipt()">下载全部</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Category Modal -->
+    <div class="modal-overlay" id="categoryModal">
+        <div class="modal-content">
+            <h3 class="modal-title">新建分类</h3>
+            <input type="text" id="newCategoryName" placeholder="分类名称" style="width:100%;padding:10px;border:1px solid #ddd;background:#fafafa;font-family:inherit;font-size:0.8rem;border-radius:1px;outline:none;">
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeModal('categoryModal')">取消</button>
+                <button class="modal-btn primary" onclick="saveNewCategory()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content" style="max-width: 380px;">
+            <h3 class="modal-title">编辑项目</h3>
+            <div class="edit-form">
+                <label>项目名</label>
+                <input type="text" id="editName">
+                <div class="edit-form-row">
+                    <div>
+                        <label>预算</label>
+                        <input type="number" id="editPrice">
+                    </div>
+                    <div>
+                        <label>实际</label>
+                        <input type="number" id="editActual">
+                    </div>
+                </div>
+                <div class="edit-form-row">
+                    <div>
+                        <label>分类</label>
+                        <select id="editCategory">
+                            <option value="new">+ 新建分类</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>优先级</label>
+                        <select id="editPriority">
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeModal('editModal')">取消</button>
+                <button class="modal-btn primary" onclick="saveEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Modal -->
+    <div class="modal-overlay" id="aiModal">
+        <div class="modal-content" style="max-width: 420px;">
+            <h3 class="modal-title">AI整理</h3>
+            <div class="edit-form">
+                <label>DeepSeek API Key</label>
+                <input type="password" id="apiKey" placeholder="sk-...">
+                <label>模式</label>
+                <select id="aiMode" onchange="toggleAIMode()">
+                    <option value="organize">整理现有清单</option>
+                    <option value="generate">智能生成项目</option>
+                </select>
+                <label id="aiPromptLabel">整理要求（可选）</label>
+                <textarea id="aiPrompt" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;background:#fafafa;font-family:inherit;font-size:0.8rem;resize:vertical;border-radius:1px;outline:none;" placeholder="例如：优化分类、调整优先级、合并相似项目..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn secondary" onclick="closeModal('aiModal')">取消</button>
+                <button class="modal-btn primary" onclick="runAIOrganize()">开始</button>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="receiptCanvas"></canvas>
+
+    <script>
+        // State
+        let budgetItems = JSON.parse(localStorage.getItem('budgetItems')) || [];
+        let customCategories = JSON.parse(localStorage.getItem('customCategories')) || [];
+        let currentStatus = 'pending';
+        let currentCategory = 'all';
+        let currentPage = 1;
+        const itemsPerPage = 15;
+        let editIndex = -1;
+        let receiptDataUrls = [];
+
+        // AI State
+        const DEFAULT_API_KEY = 'sk-c7858394368b45f8ba7929756be8bcd6';
+
+        // Storage
+        function saveToStorage() {
+            localStorage.setItem('budgetItems', JSON.stringify(budgetItems));
+            localStorage.setItem('customCategories', JSON.stringify(customCategories));
+        }
+
+        // Format
+        function formatCurrency(amount) {
+            return '¥' + (amount || 0).toLocaleString('ja-JP');
+        }
+
+        // Get category name
+        function getCategoryName(catKey) {
+            const cat = customCategories.find(c => c.key === catKey);
+            return cat ? cat.name : catKey;
+        }
+
+        // AI Status
+        function showAIStatus() {
+            document.getElementById('aiStatus').classList.add('show');
+        }
+
+        function hideAIStatus() {
+            document.getElementById('aiStatus').classList.remove('show');
+        }
+
+        function setAIStatus(status, message) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            const progress = document.getElementById('aiProgress');
+
+            dot.className = 'status-dot';
+
+            if (status === 'online') {
+                dot.classList.add('online');
+                text.textContent = 'DeepSeek 已连接';
+                progress.textContent = message || '';
+                progress.classList.remove('error');
+            } else if (status === 'offline') {
+                dot.classList.add('offline');
+                text.textContent = 'DeepSeek 未连接';
+                progress.textContent = message || '';
+                progress.classList.add('error');
+            } else if (status === 'working') {
+                dot.classList.add('working');
+                text.textContent = 'AI 正在处理...';
+                progress.textContent = message;
+                progress.classList.remove('error');
+            } else if (status === 'error') {
+                dot.classList.add('offline');
+                text.textContent = '发生错误';
+                progress.textContent = message;
+                progress.classList.add('error');
+            }
+        }
+
+        function updateAIProgress(text) {
+            document.getElementById('aiProgress').textContent = text;
+        }
+
+        // API 基础路径（自动检测环境）
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? '/api'
+            : '/.netlify/functions';
+
+        // Check connection on load
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    setAIStatus('online', '后端服务正常');
+                    return true;
+                }
+            } catch (e) {
+                setAIStatus('offline', '后端服务未启动，请运行 start.bat');
+                return false;
+            }
+        }
+
+        // Render category tabs
+        function renderCategoryTabs() {
+            const container = document.getElementById('categoryTabs');
+            const usedCategories = [...new Set(budgetItems.map(item => item.category))];
+            let html = '<button class="category-tab active" data-category="all">全部</button>';
+
+            usedCategories.forEach(cat => {
+                const name = getCategoryName(cat);
+                const active = currentCategory === cat ? 'active' : '';
+                html += `<button class="category-tab ${active}" data-category="${cat}">${name}</button>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Update category selects
+        function updateCategorySelects() {
+            const options = '<option value="new">+ 新建分类</option>' +
+                customCategories.map(c => `<option value="${c.key}">${c.name}</option>`).join('');
+
+            document.getElementById('itemCategory').innerHTML = options;
+            document.getElementById('editCategory').innerHTML = options;
+        }
+
+        // Render
+        function renderTable() {
+            const tbody = document.getElementById('budgetBody');
+            let filteredItems = budgetItems;
+
+            if (currentStatus === 'pending') {
+                filteredItems = filteredItems.filter(item => !item.completed);
+            } else {
+                filteredItems = filteredItems.filter(item => item.completed);
+            }
+
+            if (currentCategory !== 'all') {
+                filteredItems = filteredItems.filter(item => item.category === currentCategory);
+            }
+
+            // Pagination
+            const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const paginatedItems = filteredItems.slice(startIndex, startIndex + itemsPerPage);
+
+            // Show/hide pagination
+            document.getElementById('pagination').style.display = totalPages > 1 ? 'flex' : 'none';
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+
+            if (paginatedItems.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">暂无项目</div></td></tr>';
+            } else {
+                tbody.innerHTML = paginatedItems.map((item) => {
+                    const actualIndex = budgetItems.indexOf(item);
+                    const priceDisplay = formatCurrency(item.price);
+                    const actualPrice = item.actualPrice || 0;
+                    const diff = actualPrice - item.price;
+                    let diffHtml = '';
+                    if (actualPrice > 0) {
+                        const diffSign = diff >= 0 ? '+' : '';
+                        const diffClass = diff >= 0 ? 'positive' : 'negative';
+                        diffHtml = `<span class="diff ${diffClass}">${diffSign}${formatCurrency(diff)}</span>`;
+                    }
+
+                    return `
+                        <tr class="item-row ${item.completed ? 'completed' : ''}">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="item-checkbox"
+                                    ${item.completed ? 'checked' : ''}
+                                    onchange="toggleComplete(${actualIndex})">
+                            </td>
+                            <td>
+                                <span class="priority-dot priority-${item.priority}"></span>
+                                ${item.name}
+                                <span class="cat-tag">[${getCategoryName(item.category)}]</span>
+                            </td>
+                            <td class="price-cell">${priceDisplay}${diffHtml}</td>
+                            <td class="action-cell">
+                                <button class="action-btn" onclick="openEdit(${actualIndex})">✎</button>
+                                <button class="action-btn" onclick="deleteItem(${actualIndex})">×</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            updateTotal();
+            renderCategoryTabs();
+        }
+
+        function updateTotal() {
+            let filteredItems = budgetItems;
+
+            if (currentStatus === 'pending') {
+                filteredItems = filteredItems.filter(item => !item.completed);
+            } else if (currentStatus === 'completed') {
+                filteredItems = filteredItems.filter(item => item.completed);
+            }
+
+            if (currentCategory !== 'all') {
+                filteredItems = filteredItems.filter(item => item.category === currentCategory);
+            }
+
+            const total = filteredItems.reduce((sum, item) => {
+                const price = item.actualPrice && item.actualPrice > 0 ? item.actualPrice : item.price;
+                return sum + price;
+            }, 0);
+
+            document.getElementById('totalAmount').textContent = formatCurrency(total);
+        }
+
+        // Pagination
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        }
+
+        function nextPage() {
+            const filteredItems = currentStatus === 'pending'
+                ? budgetItems.filter(item => !item.completed)
+                : budgetItems.filter(item => item.completed);
+            if (currentCategory !== 'all') {
+                filteredItems = filteredItems.filter(item => item.category === currentCategory);
+            }
+            const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        }
+
+        // CRUD
+        function addItem() {
+            const nameInput = document.getElementById('itemName');
+            const priceInput = document.getElementById('itemPrice');
+            const actualInput = document.getElementById('itemActual');
+            const categorySelect = document.getElementById('itemCategory');
+            const prioritySelect = document.getElementById('itemPriority');
+
+            const name = nameInput.value.trim();
+            const price = parseInt(priceInput.value) || 0;
+            const category = categorySelect.value;
+
+            if (!name) {
+                alert('请输入项目名');
+                return;
+            }
+
+            if (category === 'new') {
+                pendingItem = { name, price, actualPrice: parseInt(actualInput.value) || 0, priority: prioritySelect.value };
+                document.getElementById('categoryModal').classList.add('active');
+                return;
+            }
+
+            budgetItems.push({
+                name,
+                price,
+                actualPrice: parseInt(actualInput.value) || 0,
+                category,
+                priority: prioritySelect.value,
+                completed: false
+            });
+            saveToStorage();
+            renderTable();
+
+            nameInput.value = '';
+            priceInput.value = '';
+            actualInput.value = '';
+        }
+
+        let pendingItem = null;
+
+        function saveNewCategory() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            if (!name) {
+                alert('请输入分类名称');
+                return;
+            }
+
+            const key = 'cat_' + Date.now();
+            customCategories.push({ key, name });
+            saveToStorage();
+            updateCategorySelects();
+
+            if (pendingItem) {
+                budgetItems.push({
+                    ...pendingItem,
+                    category: key,
+                    completed: false
+                });
+                pendingItem = null;
+                saveToStorage();
+                renderTable();
+            }
+
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemPrice').value = '';
+            document.getElementById('itemActual').value = '';
+            closeModal('categoryModal');
+        }
+
+        function deleteItem(index) {
+            if (confirm('确定删除此项目？')) {
+                budgetItems.splice(index, 1);
+                saveToStorage();
+                renderTable();
+            }
+        }
+
+        function toggleComplete(index) {
+            budgetItems[index].completed = !budgetItems[index].completed;
+            saveToStorage();
+            renderTable();
+        }
+
+        // Edit
+        function openEdit(index) {
+            editIndex = index;
+            const item = budgetItems[index];
+            document.getElementById('editName').value = item.name;
+            document.getElementById('editPrice').value = item.price;
+            document.getElementById('editActual').value = item.actualPrice || '';
+
+            const catSelect = document.getElementById('editCategory');
+            const catExists = [...catSelect.options].some(opt => opt.value === item.category);
+            if (!catExists) {
+                customCategories.push({ key: item.category, name: item.category });
+                saveToStorage();
+                updateCategorySelects();
+            }
+
+            document.getElementById('editCategory').value = item.category;
+            document.getElementById('editPriority').value = item.priority;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function saveEdit() {
+            if (editIndex >= 0) {
+                const category = document.getElementById('editCategory').value;
+
+                if (category === 'new') {
+                    pendingEdit = true;
+                    closeModal('editModal');
+                    document.getElementById('categoryModal').classList.add('active');
+                    return;
+                }
+
+                budgetItems[editIndex] = {
+                    ...budgetItems[editIndex],
+                    name: document.getElementById('editName').value.trim(),
+                    price: parseInt(document.getElementById('editPrice').value) || 0,
+                    actualPrice: parseInt(document.getElementById('editActual').value) || 0,
+                    category,
+                    priority: document.getElementById('editPriority').value
+                };
+                saveToStorage();
+                renderTable();
+                closeModal('editModal');
+            }
+        }
+
+        let pendingEdit = false;
+
+        // Tabs
+        document.getElementById('statusTabs').addEventListener('click', (e) => {
+            if (e.target.classList.contains('status-tab')) {
+                document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentStatus = e.target.dataset.status;
+                currentPage = 1;
+                renderTable();
+            }
+        });
+
+        document.getElementById('categoryTabs').addEventListener('click', (e) => {
+            if (e.target.classList.contains('category-tab')) {
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                currentCategory = e.target.dataset.category;
+                currentPage = 1;
+                renderTable();
+            }
+        });
+
+        // Menu
+        function toggleMenu() {
+            document.getElementById('menuDropdown').classList.toggle('show');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.menu-btn') && !e.target.closest('.menu-dropdown')) {
+                document.getElementById('menuDropdown').classList.remove('show');
+            }
+        });
+
+        // Data Management
+        function exportData() {
+            const data = {
+                items: budgetItems,
+                categories: customCategories,
+                notes: document.getElementById('notes').value,
+                exportDate: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `预算表备份_${new Date().toLocaleDateString('ja-JP')}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            document.getElementById('menuDropdown').classList.remove('show');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.items) {
+                            budgetItems = data.items;
+                            if (data.categories) {
+                                customCategories = data.categories;
+                                updateCategorySelects();
+                            }
+                            saveToStorage();
+                            renderTable();
+                            if (data.notes) {
+                                document.getElementById('notes').value = data.notes;
+                                localStorage.setItem('budgetNotes', data.notes);
+                            }
+                            alert('导入成功');
+                        }
+                    } catch (err) {
+                        alert('导入失败：文件格式错误');
+                    }
+                };
+                reader.readAsText(file);
+            }
+            event.target.value = '';
+            document.getElementById('menuDropdown').classList.remove('show');
+        }
+
+        function clearAllData() {
+            if (confirm('确定清空所有数据？此操作不可恢复。')) {
+                budgetItems = [];
+                customCategories = [];
+                saveToStorage();
+                updateCategorySelects();
+                renderTable();
+                document.getElementById('notes').value = '';
+                localStorage.removeItem('budgetNotes');
+            }
+            document.getElementById('menuDropdown').classList.remove('show');
+        }
+
+        // Modal
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+            if (id === 'categoryModal' && pendingEdit) {
+                pendingEdit = false;
+                document.getElementById('editModal').classList.add('active');
+            }
+        }
+
+        // AI Organize
+        function openAIOrganize() {
+            document.getElementById('apiKey').value = DEFAULT_API_KEY;
+            document.getElementById('aiMode').value = 'generate';
+            document.getElementById('aiPrompt').value = '';
+            toggleAIMode();
+            document.getElementById('aiModal').classList.add('active');
+        }
+
+        function toggleAIMode() {
+            const mode = document.getElementById('aiMode').value;
+            const label = document.getElementById('aiPromptLabel');
+            const textarea = document.getElementById('aiPrompt');
+
+            if (mode === 'generate') {
+                label.textContent = '描述需求（例如：一周的食材、周末露营装备...）';
+                textarea.placeholder = '例如：我需要准备一周的晚餐食材，预算约500元';
+            } else {
+                label.textContent = '整理要求（可选）';
+                textarea.placeholder = '例如：优化分类、调整优先级、合并相似项目...';
+            }
+        }
+
+        async function runAIOrganize() {
+            const apiKey = document.getElementById('apiKey').value.trim() || DEFAULT_API_KEY;
+            const mode = document.getElementById('aiMode').value;
+            const userPrompt = document.getElementById('aiPrompt').value.trim();
+
+            closeModal('aiModal');
+            showAIStatus();
+
+            if (mode === 'generate') {
+                await runAIGenerate(apiKey, userPrompt);
+            } else {
+                await runAIOrganizeItems(apiKey, userPrompt);
+            }
+        }
+
+        async function runAIGenerate(apiKey, userPrompt) {
+            const existingCats = customCategories.map(c => `${c.key}(${c.name})`).join(', ') || '无';
+            const systemPrompt = `你是一个购物预算规划助手。根据用户需求生成预算清单。
+
+现有分类: ${existingCats}
+优先级: high(高), medium(中), low(低)
+
+请直接返回JSON格式，不要有任何其他文字说明：
+{
+  "suggestions": "简要说明",
+  "items": [
+    {"name": "项目名", "price": 预算金额, "category": "分类名称(可新建)", "priority": "优先级"}
+  ],
+  "newCategories": ["新分类1", "新分类2"]
+}
+
+注意：
+1. price必须是数字
+2. category可以是现有的分类名称，也可以新建
+3. priority必须是: high, medium, low 之一
+4. 如果创建了新分类，请在newCategories中列出`;
+
+            const prompt = userPrompt || `请帮我生成一份一周的基本购物清单，包括食材、日用品等`;
+
+            setAIStatus('working', '正在连接 DeepSeek...');
+            updateAIProgress('发送请求...');
+
+            try {
+                const response = await fetch(`${API_BASE}/deepseek`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        apiKey,
+                        model: 'deepseek-chat',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 0.8,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API错误: ${response.status}`);
+                }
+
+                setAIStatus('working', '正在生成...');
+                updateAIProgress('接收响应...\n\n');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+
+                            try {
+                                const parsed = JSON.parse(data);
+                                const content = parsed.choices?.[0]?.delta?.content;
+                                if (content) {
+                                    fullContent += content;
+                                    updateAIProgress(fullContent);
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                // Parse result
+                const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const result = JSON.parse(jsonMatch[0]);
+
+                    if (result.newCategories && Array.isArray(result.newCategories)) {
+                        result.newCategories.forEach(catName => {
+                            const key = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                            customCategories.push({ key, name: catName });
+                        });
+                        saveToStorage();
+                        updateCategorySelects();
+                    }
+
+                    if (result.items && Array.isArray(result.items)) {
+                        const count = result.items.length;
+                        setAIStatus('online', `生成了 ${count} 个项目`);
+                        updateAIProgress(fullContent);
+
+                        if (confirm(`AI生成了 ${count} 个项目，是否添加到清单？\n\n${result.suggestions || ''}`)) {
+                            result.items.forEach(item => {
+                                let catKey = customCategories.find(c => c.name === item.category)?.key;
+                                if (!catKey) {
+                                    catKey = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                                    customCategories.push({ key: catKey, name: item.category || '其他' });
+                                }
+
+                                budgetItems.push({
+                                    name: item.name || '未命名',
+                                    price: parseInt(item.price) || 0,
+                                    actualPrice: 0,
+                                    category: catKey,
+                                    priority: item.priority || 'medium',
+                                    completed: false
+                                });
+                            });
+                            saveToStorage();
+                            renderTable();
+                        }
+                    }
+                } else {
+                    setAIStatus('error', '无法解析 AI 返回结果');
+                }
+
+            } catch (err) {
+                setAIStatus('error', '错误: ' + err.message);
+                updateAIProgress(err.message + '\n\n本地运行请确保 start.bat 正在运行');
+            }
+        }
+
+        async function runAIOrganizeItems(apiKey, customPrompt) {
+            if (budgetItems.length === 0) {
+                alert('当前清单为空，请使用"智能生成项目"模式');
+                hideAIStatus();
+                return;
+            }
+
+            const currentData = budgetItems.map((item, i) =>
+                `${i + 1}. ${item.name} - 预算:${item.price} 实际:${item.actualPrice || '未填'} 分类:${getCategoryName(item.category)} 优先级:${item.priority} 已购:${item.completed ? '是' : '否'}`
+            ).join('\n');
+
+            const systemPrompt = `你是一个购物预算整理助手。请分析用户的预算清单，提供优化建议。
+
+请直接返回JSON格式，不要有任何其他文字说明：
+{
+  "suggestions": ["建议1", "建议2", ...],
+  "optimized": [
+    {"name": "项目名", "price": 预算, "category": "分类名称", "priority": "优先级"}
+  ],
+  "newCategories": ["新分类1", "新分类2"]
+}
+
+如果用户没有要求修改清单，optimized数组请返回null。`;
+
+            const userPrompt = customPrompt ||
+                `请分析以下预算清单，给出优化建议:\n${currentData}`;
+
+            setAIStatus('working', '正在连接 DeepSeek...');
+
+            try {
+                const response = await fetch(`${API_BASE}/deepseek`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        apiKey,
+                        model: 'deepseek-chat',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        temperature: 0.7,
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API错误: ${response.status}`);
+                }
+
+                setAIStatus('working', '正在分析...');
+                updateAIProgress('接收响应...\n\n');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+
+                            try {
+                                const parsed = JSON.parse(data);
+                                const content = parsed.choices?.[0]?.delta?.content;
+                                if (content) {
+                                    fullContent += content;
+                                    updateAIProgress(fullContent);
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }
+
+                const jsonMatch = fullContent.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    const result = JSON.parse(jsonMatch[0]);
+
+                    if (result.newCategories && Array.isArray(result.newCategories)) {
+                        result.newCategories.forEach(catName => {
+                            const key = 'cat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                            customCategories.push({ key, name: catName });
+                        });
+                        saveToStorage();
+                        updateCategorySelects();
+                    }
+
+                    if (result.suggestions && result.suggestions.length > 0) {
+                        setAIStatus('online', '分析完成');
+                        let message = 'AI建议:\n\n' + result.suggestions.map((s, i) => `${i + 1}. ${s}`).join('\n');
+
+                        if (result.optimized && Array.isArray(result.optimized)) {
+                            message += '\n\n是否应用优化后的清单？';
+
+                            if (confirm(message + '\n\n点击确定应用，取消忽略。')) {
+                                const usedCatNames = [...new Set(result.optimized.map(i => i.category))];
+                                customCategories = usedCatNames.map((name, i) => ({
+                                    key: 'cat_' + Date.now() + '_' + i,
+                                    name
+                                }));
+                                saveToStorage();
+                                updateCategorySelects();
+
+                                budgetItems = result.optimized.map(item => {
+                                    const cat = customCategories.find(c => c.name === item.category);
+                                    return {
+                                        name: item.name,
+                                        price: item.price || 0,
+                                        actualPrice: 0,
+                                        category: cat ? cat.key : customCategories[0]?.key || 'other',
+                                        priority: item.priority || 'medium',
+                                        completed: false
+                                    };
+                                });
+                                saveToStorage();
+                                renderTable();
+                            }
+                        } else {
+                            alert(message);
+                        }
+                    }
+                }
+
+            } catch (err) {
+                setAIStatus('error', '错误: ' + err.message);
+            }
+        }
+
+        // Receipt
+        function generateReceipt() {
+            const canvas = document.getElementById('receiptCanvas');
+            const ctx = canvas.getContext('2d');
+
+            const width = 360;
+            const itemHeight = 32;
+            const headerHeight = 100;
+            const footerHeight = 80;
+            const itemsPerPage = 12;
+
+            receiptDataUrls = [];
+            const totalPages = Math.ceil(budgetItems.length / itemsPerPage);
+
+            for (let page = 0; page < totalPages; page++) {
+                const pageItems = budgetItems.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+                const height = headerHeight + (pageItems.length * itemHeight) + footerHeight + 60;
+
+                canvas.width = width;
+                canvas.height = height;
+
+                ctx.fillStyle = '#fafafa';
+                ctx.fillRect(0, 0, width, height);
+
+                ctx.fillStyle = '#f0f0f0';
+                ctx.beginPath();
+                for (let i = 0; i < width; i += 8) {
+                    ctx.lineTo(i, 0);
+                    ctx.lineTo(i + 4, 6);
+                }
+                ctx.lineTo(width, 6);
+                ctx.lineTo(width, 0);
+                ctx.fill();
+
+                ctx.fillStyle = '#1a1a1a';
+                ctx.font = 'bold 20px "Yu Mincho", "SimSun", serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('予算表', width / 2, 45);
+
+                ctx.font = '10px sans-serif';
+                ctx.fillStyle = '#666';
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                ctx.fillText(dateStr + `  (${page + 1}/${totalPages})`, width / 2, 65);
+
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(20, headerHeight - 15);
+                ctx.lineTo(width - 20, headerHeight - 15);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                let y = headerHeight + 5;
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#333';
+                ctx.font = '12px "Yu Mincho", "SimSun", serif';
+
+                pageItems.forEach((item) => {
+                    const displayPrice = item.actualPrice && item.actualPrice > 0 ? item.actualPrice : item.price;
+                    ctx.fillText(item.name, 30, y);
+                    ctx.textAlign = 'right';
+                    ctx.fillText('¥' + displayPrice.toLocaleString(), width - 30, y);
+                    ctx.textAlign = 'left';
+                    y += itemHeight;
+                });
+
+                y += 15;
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(20, y);
+                ctx.lineTo(width - 20, y);
+                ctx.stroke();
+
+                y += 30;
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#1a1a1a';
+                ctx.font = '12px "Yu Mincho", "SimSun", serif';
+                ctx.fillText(page === totalPages - 1 ? '合計' : '小計', 30, y);
+                ctx.textAlign = 'right';
+                ctx.font = 'bold 18px "Georgia", serif';
+
+                const pageTotal = pageItems.reduce((sum, item) => {
+                    const p = item.actualPrice && item.actualPrice > 0 ? item.actualPrice : item.price;
+                    return sum + p;
+                }, 0);
+                ctx.fillText('¥' + pageTotal.toLocaleString(), width - 30, y);
+
+                if (page === totalPages - 1) {
+                    y += 35;
+                    ctx.fillStyle = '#333';
+                    for (let i = 0; i < 40; i++) {
+                        const barWidth = Math.random() > 0.5 ? 2 : 1;
+                        ctx.fillRect(width / 2 - 60 + i * 3, y, barWidth, 25);
+                    }
+                }
+
+                ctx.fillStyle = '#f0f0f0';
+                ctx.beginPath();
+                ctx.moveTo(0, height - 6);
+                for (let i = 0; i < width; i += 8) {
+                    ctx.lineTo(i + 4, height - 6);
+                    ctx.lineTo(i, height);
+                }
+                ctx.lineTo(width, height);
+                ctx.lineTo(width, height - 6);
+                ctx.fill();
+
+                receiptDataUrls.push(canvas.toDataURL('image/png'));
+            }
+
+            const preview = document.getElementById('receiptPreview');
+            preview.innerHTML = receiptDataUrls.map((url, i) =>
+                `<div><img src="${url}" style="max-width:100%;"><div class="page-indicator">第 ${i + 1} 页</div></div>`
+            ).join('');
+            document.getElementById('receiptModal').classList.add('active');
+        }
+
+        function downloadReceipt() {
+            const now = new Date();
+            receiptDataUrls.forEach((url, i) => {
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.download = `予算表_p${i + 1}_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.png`;
+                    link.href = url;
+                    link.click();
+                }, i * 300);
+            });
+        }
+
+        // Notes
+        document.getElementById('notes').value = localStorage.getItem('budgetNotes') || '';
+        document.getElementById('notes').addEventListener('input', (e) => {
+            localStorage.setItem('budgetNotes', e.target.value);
+        });
+
+        // Enter key
+        document.getElementById('itemPrice').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addItem();
+        });
+
+        // Close modals
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+        });
+
+        // Init
+        checkConnection();
+        updateCategorySelects();
+        renderTable();
+    </script>
+</body>
+</html>
